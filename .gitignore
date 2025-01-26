@@ -53,7 +53,6 @@ coverage/
 Thumbs.db
 
 # Dependency locks (optional)
-package-lock.json
 yarn.lock
 
 # Linting
