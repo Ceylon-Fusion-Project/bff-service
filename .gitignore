@@ -1,0 +1,111 @@
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Build output
+dist/
+build/
+out/
+.esm-cache/
+.esm-output/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Keycloak configuration (if any specific files)
+*.json
+keycloak-config/
+
+# Runtime data
+pids/
+*.pid
+*.pid.lock
+
+# Temporary files
+tmp/
+temp/
+
+# Test coverage output
+coverage/
+
+# Compiled files
+*.tsbuildinfo
+*.d.ts
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.sublime-project
+*.sublime-workspace
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Dependency locks (optional)
+package-lock.json
+yarn.lock
+
+# Linting
+eslintcache
+*.eslintcache
+
+# Logs from npm
+npm-debug.log*
+yarn-debug.log*
+
+# Debugging
+debug.log*
+*.stacktrace
+*.trace
+
+# Deployment
+.Dockerfile
+docker-compose.override.yml
+
+# Git-specific files
+.git/
+.gitignore.backup
+
+# Other system files
+*.bak
+*.tmp
+
+# Generated code
+*.generated.js
+*.map
+
+# Misc
+*.log.[0-9]
+*.env_backup
+
+# Optional cache
+.cache/
+.parcel-cache/
+.next/
+
+# Keycloak Tokens and Credentials
+auth-tokens.json
+auth-config.json
+
+# PM2 Process Manager Logs
+pm2-logs/
+*.pm2
+
+# User-specific files
+*.iml
+*.gz
+*.tgz
+
+# Lockfiles
+*.lock
