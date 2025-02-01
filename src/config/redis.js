@@ -1,17 +1,21 @@
-const redis = require('redis');
-const RedisStore = require('connect-redis').default;
+const Redis = require("ioredis");
+const session = require("express-session");
+const RedisStore = require("connect-redis").RedisStore;
 
-module.exports = {
-  createClient: () => {
-    const client = redis.createClient({
-      host: process.env.REDIS_HOST,
-      port: process.env.REDIS_PORT,
-      password: process.env.REDIS_PASSWORD
-    });
+const redisClient = new Redis({
+  host: process.env.REDIS_HOST,
+  port: process.env.REDIS_PORT,
+  password: process.env.REDIS_PASSWORD,
+});
 
-    client.on('error', (err) => console.log('Redis Client Error', err));
-    return client;
-  },
+redisClient.on("error", function (err) {
+  console.error("ioredis Error:", err);
+});
 
-  getSessionStore: (client) => new RedisStore({ client })
-};
+const sessionStore = new RedisStore({
+  client: redisClient,
+  disableTouch: true,
+  ttl: 86400, 
+});
+
+module.exports = { redisClient, sessionStore };

@@ -1,11 +1,12 @@
 const express = require("express");
-const session = require('express-session');
+const session = require("express-session");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
-const RedisStore = require('connect-redis').RedisStore;
-const redis = require("ioredis");
-require('dotenv').config();
+require("dotenv").config();
+
+// Import from centralized redis.js
+const { sessionStore } = require("./config/redis");;
 
 // Import Keycloak initialization
 const { initKeycloak } = require('./config/keycloak');
@@ -23,22 +24,19 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Redis client setup
-const redisClient = redis.createClient({
-  // host: process.env.REDIS_HOST,
-  // port: process.env.REDIS_PORT,
-  // password: process.env.REDIS_PASSWORD
-  host: 'localhost',
-  port: 6379,
-  password: '2000319'
-});
+// // Redis client setup
+// const redisClient = redis.createClient({
+//   host: process.env.REDIS_HOST,
+//   port: process.env.REDIS_PORT,
+//   password: process.env.REDIS_PASSWORD
+// });
 
-redisClient.on('error', (err) => console.log('Redis Client Error', err));
+//redisClient.on('error', (err) => console.log('Redis Client Error', err));
 
 // Session configuration with Redis
 app.use(
   session({
-    store: new RedisStore({ client: redisClient }),
+    store: sessionStore,
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
