@@ -11,16 +11,35 @@ const { sessionStore } = require("./config/redis");;
 // Import Keycloak initialization
 const { initKeycloak } = require('./config/keycloak');
 
+//Import Global Rate Limiter
+const { globalLimiter } = require('./middlewares/rateLimiter');
+
+//Import saveOriginal Url
+const saveOriginalUrl = require('./middlewares/saveOriginalUrl');
+
 // Initialize Express application
 const app = express();
 
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", process.env.FRONTEND_URL);
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  // If this is an OPTIONS request, respond immediately.
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 // Security middleware
-app.use(helmet());
-app.use(morgan('dev'));
 app.use(cors({
   origin: process.env.FRONTEND_URL,
   credentials: true
 }));
+app.use(globalLimiter);
+app.use(helmet());
+app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -41,13 +60,18 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
+      //secure: process.env.NODE_ENV === 'production', //Only works with HTTPS
+      secure: false, //Allows session cookies in development
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
-      sameSite: 'lax'
+      //sameSite: 'lax'
+      sameSite: 'none'
     }
   })
 );
+
+// Save original URL middleware
+ app.use(saveOriginalUrl);
 
 // Keycloak configuration
 const keycloakConfig = {
@@ -63,12 +87,12 @@ const keycloakConfig = {
 };
 
 // Initialize Keycloak
-const keycloak = initKeycloak(app, keycloakConfig);
+const keycloak = initKeycloak(sessionStore, keycloakConfig);
 
 // Apply Keycloak middleware
 app.use(keycloak.middleware({
   logout: '/logout',
-  admin: '/'
+  admin: '/admin'
 }));
 
 // Load routes

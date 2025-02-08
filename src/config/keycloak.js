@@ -5,14 +5,14 @@ require("dotenv").config();
 let _keycloak;
 
 // Function to initialize Keycloak
-function initKeycloak(memoryStore, keycloakConfig) {
+function initKeycloak(sessionStore, keycloakConfig) {
   if (_keycloak) {
     console.warn("Trying to init Keycloak again!");
     return _keycloak;
   } else {
     console.log("Initializing Keycloak...");
     
-    _keycloak = new Keycloak({ store: memoryStore }, keycloakConfig);
+    _keycloak = new Keycloak({ store: sessionStore }, keycloakConfig);
     return _keycloak;
   }
 }

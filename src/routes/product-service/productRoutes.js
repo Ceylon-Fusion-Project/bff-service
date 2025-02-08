@@ -19,7 +19,7 @@ module.exports = (keycloak) => {
   router.get("/get-products", productController.getAllProductsWithSort);
 
   // Route to get product details by ID
-  router.get("/get-product-details-by-id", productController.getProductById);
+  router.get("/get-product-details-by-id",keycloak.protect(), productController.getProductById);
 
   // Route to update product details
   router.patch(
