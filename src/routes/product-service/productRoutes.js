@@ -18,8 +18,17 @@ module.exports = (keycloak) => {
   // This route is public and does not require authentication
   router.get("/get-products", productController.getAllProductsWithSort);
 
+  const sampleProduct = {
+    productID: 1,
+    productCode: "C-001",
+    productName: "Example",
+    productDescription: "Sample product",
+    sellingPrice: 200,
+    productQuantity: 50
+  };
+
   // Route to get product details by ID
-  router.get("/get-product-details-by-id",keycloak.protect(), productController.getProductById);
+  router.get("/get-product-details-by-id",productController.getProductById);
 
   // Route to update product details
   router.patch(

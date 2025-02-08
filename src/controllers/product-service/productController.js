@@ -39,12 +39,12 @@ exports.deleteProductByID = async (req, res) => {
 };
 
 exports.getProductById = async (req, res) => {
-  //Check if user is authenticated in session
+  // If the session is not authenticated, return a JSON error.
   if (!req.session.authenticated) {
-    // Redirect to login with the original URL as a query parameter
-    return res.redirect(
-      `/api/v1/auth/login?redirect=${encodeURIComponent(req.originalUrl)}`
-    );
+    return res.status(401).json({
+      message: "Not authenticated. Please log in.",
+      loginEndpoint: "/api/v1/auth/login", // provide a login endpoint for the client to call
+    });
   }
   try {
     const data = await productService.getProductById(req);
@@ -69,14 +69,14 @@ exports.getProductByFiltering = async (req, res) => {
   }
 };
 
-exports.getAllProductsWithSort = async (req,res) =>{
-    try{
-        const data = await productService.getAllProductsWithSort(req);
-        res.status(200).json({
-            message: 'All Products',
-            data: data
-        });
-    }catch(error){
-        res.status(404).json({message: error.message});
-    }
-}
+exports.getAllProductsWithSort = async (req, res) => {
+  try {
+    const data = await productService.getAllProductsWithSort(req);
+    res.status(200).json({
+      message: "All Products",
+      data: data,
+    });
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
+};
