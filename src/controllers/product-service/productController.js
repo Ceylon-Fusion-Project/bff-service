@@ -39,6 +39,13 @@ exports.deleteProductByID = async (req, res) => {
 };
 
 exports.getProductById = async (req, res) => {
+  //Check if user is authenticated in session
+  if (!req.session.authenticated) {
+    // Redirect to login with the original URL as a query parameter
+    return res.redirect(
+      `/api/v1/auth/login?redirect=${encodeURIComponent(req.originalUrl)}`
+    );
+  }
   try {
     const data = await productService.getProductById(req);
     res.status(200).json({

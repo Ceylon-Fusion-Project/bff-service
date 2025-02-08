@@ -33,10 +33,21 @@ app.use((req, res, next) => {
 });
 
 // Security middleware
+// app.use(cors({
+//   origin: process.env.FRONTEND_URL,
+//   credentials: true
+// }));
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL,
-  credentials: true
+  origin: ["http://localhost:5173", "http://localhost:3001"], // Allow Frontend & BFF
+  credentials: true,
+  methods: "GET, POST, PUT, DELETE, OPTIONS",
+  allowedHeaders: "Origin, X-Requested-With, Content-Type, Accept, Authorization"
 }));
+
+// Handle Preflight Requests
+app.options("*", cors());
+
 app.use(globalLimiter);
 app.use(helmet());
 app.use(morgan('dev'));
@@ -64,8 +75,7 @@ app.use(
       secure: false, //Allows session cookies in development
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
-      //sameSite: 'lax'
-      sameSite: 'none'
+      sameSite: 'lax'
     }
   })
 );
