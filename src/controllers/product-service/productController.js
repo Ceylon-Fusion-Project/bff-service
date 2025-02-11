@@ -1,9 +1,15 @@
 const productService = require("../../services/product-Service/productService");
 
 exports.saveProduct = async (req, res) => {
+  // If the session is not authenticated, return a JSON error.
+  if (!req.session.authenticated) {
+    return res.status(401).json({
+      message: "Not authenticated. Please log in.",
+      loginEndpoint: "/api/v1/auth/login", // provide a login endpoint for the client to call
+    });
+  }
   try {
     const data = await productService.saveProduct(req); // Calls the service
-
     // Responds with HTTP 201 (Created) if successful
     res.status(201).json({
       message: "Product saved successfully",
@@ -15,6 +21,13 @@ exports.saveProduct = async (req, res) => {
 };
 
 exports.updateProductDetails = async (req, res) => {
+  // If the session is not authenticated, return a JSON error.
+  if (!req.session.authenticated) {
+    return res.status(401).json({
+      message: "Not authenticated. Please log in.",
+      loginEndpoint: "/api/v1/auth/login", // provide a login endpoint for the client to call
+    });
+  }
   try {
     const data = await productService.updateProductDetails(req);
     res.status(200).json({
@@ -27,6 +40,13 @@ exports.updateProductDetails = async (req, res) => {
 };
 
 exports.deleteProductByID = async (req, res) => {
+  // If the session is not authenticated, return a JSON error.
+  if (!req.session.authenticated) {
+    return res.status(401).json({
+      message: "Not authenticated. Please log in.",
+      loginEndpoint: "/api/v1/auth/login", // provide a login endpoint for the client to call
+    });
+  }
   try {
     const data = await productService.deleteProductByID(req);
     res.status(200).json({

@@ -41,12 +41,12 @@ exports.getProductById = async (req) => {
 
 exports.updateProductDetails = async (req) => {
   const token = req.kauth.grant.access_token.token;
-  const { productId } = req.query;
+  const { id } = req.query;
   const url = `${process.env.PRODUCT_MS_URL}/product-service/api/v1/product/update-product-details`;
 
   const response = await axios.patch(url, req.body, {
     headers: { Authorization: `Bearer ${token}` },
-    params: { productId },
+    params: { id },
   });
 
   return response.data;
@@ -54,12 +54,12 @@ exports.updateProductDetails = async (req) => {
 
 exports.deleteProductByID = async (req) => {
   const token = req.kauth.grant.access_token.token;
-  const { productId } = req.query;
+  const { id } = req.query;
   const url = `${process.env.PRODUCT_MS_URL}/product-service/api/v1/product/delete-product-by-id`;
 
   const response = await axios.delete(url, {
     headers: { Authorization: `Bearer ${token}` },
-    params: { productId },
+    params: { id },
   });
 
   return response.data;
