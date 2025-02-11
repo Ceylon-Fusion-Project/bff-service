@@ -1,7 +1,9 @@
 const axios = require("axios");
 
 exports.saveProduct = async (req) => {
-  const token = req.kauth.grant.access_token.token;// Extract authentication token from req
+  //const token = req.kauth.grant.access_token.token;// Extract authentication token from req
+  const token = req.cookies.jwt;
+  if (!token) throw new Error("Unauthorized");
   const url = `${process.env.API_GATEWAY_URL}/product-service/api/v1/product/save-product`;
 
   const response = await axios.post(url, req.body, {
