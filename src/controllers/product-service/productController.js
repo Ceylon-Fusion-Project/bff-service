@@ -1,4 +1,4 @@
-const productService = require("../../services/product-Service/productService");
+const productService = require("../../services/product-service/productService");
 
 exports.saveProduct = async (req, res) => {
   // If the session is not authenticated, return a JSON error.
