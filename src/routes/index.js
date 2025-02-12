@@ -5,21 +5,22 @@ const { redisCircuitBreaker } = require("../utils/circuitBreaker");
 module.exports = (keycloak) => {
   const router = express.Router();
 
-  // Import route handlers
+  // Import route handlers: PRODUCT_SERVICE
   const productRoutes = require("./product-service/productRoutes")(keycloak);
   const authRoutes = require("./authRoutes")(keycloak);
-  //   const ratingRoutes = require("./product-service/ratingRoutes")(keycloak);
-  //   const originRoutes = require("./product-service/originRoutes")(keycloak);
-  //   const certificationRoutes = require("./product-service/certificationRoutes")(keycloak);
+  const ratingRoutes = require("./product-service/ratingRoutes")(keycloak);
+  const originRoutes = require("./product-service/originRoutes")(keycloak);
+  const certificationRoutes = require("./product-service/certificationRoutes")(keycloak);
 
   // --- Route Aggregation ---
 
-  //Register routes
+//Register routes: PRODUCT_SERVICES
   router.use("/api/v1/product", productRoutes);
   router.use("/api/v1/auth", authRoutes);
-  //   router.use("/api/ratings", ratingRoutes);
-  //   router.use("/api/origins", originRoutes);
-  //   router.use("/api/certifications", certificationRoutes);
+  router.use("/api/v1/certifications", certificationRoutes);
+  router.use("/api/v1/ratings", ratingRoutes);
+  router.use("/api/v1/origins", originRoutes);
+  
 
   router.get("/health", async (req, res) => {
     try {

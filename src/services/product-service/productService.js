@@ -42,7 +42,9 @@ exports.getProductById = async (req) => {
 };
 
 exports.updateProductDetails = async (req) => {
-  const token = req.kauth.grant.access_token.token;
+  //const token = req.kauth.grant.access_token.token;
+  const token = req.cookies.jwt;
+  if (!token) throw new Error("Unauthorized");
   const { id } = req.query;
   const url = `${process.env.PRODUCT_MS_URL}/product-service/api/v1/product/update-product-details`;
 
@@ -55,7 +57,9 @@ exports.updateProductDetails = async (req) => {
 };
 
 exports.deleteProductByID = async (req) => {
-  const token = req.kauth.grant.access_token.token;
+  //const token = req.kauth.grant.access_token.token;
+  const token = req.cookies.jwt;
+  if (!token) throw new Error("Unauthorized");
   const { id } = req.query;
   const url = `${process.env.PRODUCT_MS_URL}/product-service/api/v1/product/delete-product-by-id`;
 
@@ -68,7 +72,7 @@ exports.deleteProductByID = async (req) => {
 };
 
 exports.getProductByFiltering = async (req) => {
-  const token = req.kauth.grant.access_token.token;
+  //const token = req.kauth.grant.access_token.token;
   const {
     productName,
     minPrice,
