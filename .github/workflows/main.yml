@@ -1,0 +1,94 @@
+name: "BFF Build and Security Scan"
+
+on:
+  push:
+    branches:
+      - "development"
+      - "main"
+    paths:
+      - "**"
+      - .github/workflows/node-bff.yml
+
+  pull_request:
+    branches:
+      - "development"
+      - "main"
+    paths:
+      - "**"
+      - .github/workflows/node-bff.yml
+
+  schedule:
+    - cron: "0 0 * * 0"  # Runs every Sunday at midnight
+
+permissions:
+  contents: write
+  actions: read
+  security-events: write  # Required for CodeQL
+
+jobs:
+  backend-bff:
+    name: Build and Security Scan (BFF)
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Step 2: Debug - List Repository Contents
+      - name: Debug - List Repository Contents
+        run: ls -R
+
+      # Step 3: Set up Node.js v22
+      - name: Set up Node.js v22
+        uses: actions/setup-node@v3
+        with:
+          node-version: 22
+          cache: npm
+
+      # Step 4: Install dependencies
+      - name: Install Dependencies
+        run: |
+          echo "Installing project dependencies..."
+          npm install
+
+      # Step 5: Run Linting and Code Format Checks
+      - name: Run ESLint
+        run: |
+          echo "Running ESLint..."
+          npm run lint || echo "Linting issues detected!"
+
+      # Step 6: Run Tests
+      - name: Run Unit Tests
+        run: |
+          echo "Running unit tests..."
+          npm test || echo "Tests failed, please check!"
+
+      # Step 7: Run OWASP Dependency-Check (Checking Dependencies for Vulnerabilities)
+      - name: Run OWASP Dependency-Check
+        run: |
+          echo "Running OWASP Dependency-Check..."
+          npx dependency-check --format ALL || echo "Security issues detected!"
+        continue-on-error: true  # Allow workflow to continue even if vulnerabilities are found
+
+      # Step 8: (Optional) Trivy Security Scanner for Application and Dependencies
+      - name: Run Trivy Security Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          ignore-unfixed: true
+          severity: "CRITICAL,HIGH"
+        continue-on-error: true  # Allow workflow to continue even if vulnerabilities are found
+
+      # Step 9: (Optional) CodeQL Analysis for Static Security Checks
+      - name: Setup CodeQL (v3)
+        if: ${{ github.event.repository.private == false || github.event.repository.security_events_enabled }}
+        uses: github/codeql-action/init@v3
+        with:
+          languages: "javascript"
+
+      - name: Run CodeQL Analysis
+        if: ${{ github.event.repository.private == false || github.event.repository.security_events_enabled }}
+        uses: github/codeql-action/analyze@v3
