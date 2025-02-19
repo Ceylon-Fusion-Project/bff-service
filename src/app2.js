@@ -3,6 +3,7 @@ const session = require("express-session");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
+const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
 // Import from centralized redis.js
@@ -48,6 +49,7 @@ app.use(cors({
 // Handle Preflight Requests
 app.options("*", cors());
 
+app.use(cookieParser());
 app.use(globalLimiter);
 app.use(helmet());
 app.use(morgan('dev'));

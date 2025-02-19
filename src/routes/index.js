@@ -5,21 +5,38 @@ const { redisCircuitBreaker } = require("../utils/circuitBreaker");
 module.exports = (keycloak) => {
   const router = express.Router();
 
-  // Import route handlers
-  const productRoutes = require("./product-service/productRoutes")(keycloak);
+  // Import route handlers: AUTHENTICATION
   const authRoutes = require("./authRoutes")(keycloak);
-  //   const ratingRoutes = require("./product-service/ratingRoutes")(keycloak);
-  //   const originRoutes = require("./product-service/originRoutes")(keycloak);
-  //   const certificationRoutes = require("./product-service/certificationRoutes")(keycloak);
 
-  // --- Route Aggregation ---
+  // Import route handlers: PRODUCT_SERVICE
+  const productRoutes = require("./product-service/productRoutes")(keycloak);
+  const ratingRoutes = require("./product-service/ratingRoutes")(keycloak);
+  const originRoutes = require("./product-service/originRoutes")(keycloak);
+  const certificationRoutes = require("./product-service/certificationRoutes")(keycloak);
 
-  //Register routes
-  router.use("/api/v1/product", productRoutes);
+  // Import route handlers: ORDER_SERVICE
+  const orderRoutes = require("./order-service/orderRoutes")(keycloak);
+  const cartRoutes = require("./order-service/cartRoutes")(keycloak);
+  const wishlistRoutes = require("./order-service/wishlistRoutes")(keycloak);
+
+  //____________________________________________________________________________________
+  //
+  //  --- Route Aggregation ---
+  //____________________________________________________________________________________
+
+  //Register routes: AUTHENTICATION
   router.use("/api/v1/auth", authRoutes);
-  //   router.use("/api/ratings", ratingRoutes);
-  //   router.use("/api/origins", originRoutes);
-  //   router.use("/api/certifications", certificationRoutes);
+
+  //Register routes: PRODUCT_SERVICES
+  router.use("/api/v1/product", productRoutes);
+  router.use("/api/v1/certifications", certificationRoutes);
+  router.use("/api/v1/ratings", ratingRoutes);
+  router.use("/api/v1/origins", originRoutes);
+
+  //Register routes: ORDER_SERVICES
+  router.use("/api/v1/orders", orderRoutes);
+  router.use("/api/v1/cart", cartRoutes);
+  router.use("/api/v1/wishlist", wishlistRoutes);
 
   router.get("/health", async (req, res) => {
     try {
