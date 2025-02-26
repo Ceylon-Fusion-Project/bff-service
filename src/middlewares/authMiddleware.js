@@ -21,6 +21,8 @@ const getKey = (header, callback) => {
 const authenticateUser = (req, res, next) => {
   const token = req.cookies.jwt;
 
+  console.log("JWT Token:", token); // Log to check if token is received
+
   if (!token) {
     return res.status(401).json({
       message: "Not authenticated",

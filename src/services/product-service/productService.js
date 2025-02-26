@@ -46,7 +46,7 @@ exports.updateProductDetails = async (req) => {
   const token = req.cookies.jwt;
   if (!token) throw new Error("Unauthorized");
   const { id } = req.query;
-  const url = `${process.env.PRODUCT_MS_URL}/product-service/api/v1/product/update-product-details`;
+  const url = `${process.env.API_GATEWAY_URL}/product-service/api/v1/product/update-product-details`;
 
   const response = await axios.patch(url, req.body, {
     headers: { Authorization: `Bearer ${token}` },

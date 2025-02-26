@@ -4,7 +4,7 @@ const axios = require("axios");
 
 module.exports = (keycloak) => {
   router.get("/login", (req, res) => {
-    const redirectUrl = "http://localhost:5173/product-details"; // or wherever
+    const redirectUrl = "http://localhost:5173"; // or wherever
     const loginUrl =
       process.env.KEYCLOAK_AUTH_SERVER_URL +
       `/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/auth` +

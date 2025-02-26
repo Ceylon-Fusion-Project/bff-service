@@ -1,5 +1,4 @@
 const express = require("express");
-const idempotencyMiddleware = require("../middlewares/idempotencyMiddleware");
 const { redisCircuitBreaker } = require("../utils/circuitBreaker");
 
 module.exports = (keycloak) => {
