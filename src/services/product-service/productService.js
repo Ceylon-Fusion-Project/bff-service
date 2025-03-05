@@ -46,7 +46,7 @@ exports.updateProductDetails = async (req) => {
   const token = req.cookies.jwt;
   if (!token) throw new Error("Unauthorized");
   const { id } = req.query;
-  const url = `${process.env.PRODUCT_MS_URL}/product-service/api/v1/product/update-product-details`;
+  const url = `${process.env.API_GATEWAY_URL}/product-service/api/v1/product/update-product-details`;
 
   const response = await axios.patch(url, req.body, {
     headers: { Authorization: `Bearer ${token}` },
@@ -61,7 +61,7 @@ exports.deleteProductByID = async (req) => {
   const token = req.cookies.jwt;
   if (!token) throw new Error("Unauthorized");
   const { id } = req.query;
-  const url = `${process.env.PRODUCT_MS_URL}/product-service/api/v1/product/delete-product-by-id`;
+  const url = `${process.env.API_GATEWAY_URL}/product-service/api/v1/product/delete-product-by-id`;
 
   const response = await axios.delete(url, {
     headers: { Authorization: `Bearer ${token}` },
@@ -86,7 +86,7 @@ exports.getProductByFiltering = async (req) => {
     size,
   } = req.query;
 
-  const url = `${process.env.PRODUCT_MS_URL}/product-service/api/v1/product/get-product-by-filtering`;
+  const url = `${process.env.API_GATEWAY_URL}/product-service/api/v1/product/get-product-by-filtering`;
 
   // Remove undefined values from the params object
   const params = Object.fromEntries(
@@ -105,7 +105,7 @@ exports.getProductByFiltering = async (req) => {
   );
 
   const response = await axios.get(url, {
-    headers: { Authorization: `Bearer ${token}` },
+    //headers: { Authorization: `Bearer ${token}` },
     params,
   });
 
