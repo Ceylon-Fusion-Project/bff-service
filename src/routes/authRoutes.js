@@ -4,7 +4,7 @@ const axios = require("axios");
 
 module.exports = (keycloak) => {
   router.get("/login", (req, res) => {
-    const redirectUrl = "http://localhost:5173"; // or wherever
+    const redirectUrl = "http://localhost:5173";  // Frontend URL where users go after login
     const loginUrl =
       process.env.KEYCLOAK_AUTH_SERVER_URL +
       `/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/auth` +
@@ -39,15 +39,9 @@ module.exports = (keycloak) => {
 
   // 2) Callback from Keycloak after user logs in
   router.get("/callback", async (req, res) => {
-    // req.session.authenticated = true;
-    // // If we get here, keycloak.protect() handled the token exchange, user is logged in
-    // const redirectUrl = req.session.afterLogin || process.env.FRONTEND_URL;
-    // delete req.session.afterLogin;
-
-    // req.session.save(() => {
-    //     res.redirect(redirectUrl);
-    //   });
-    const { code } = req.query; // Get the authorization code from Keycloak
+    // Get the authorization code from Keycloak
+    // (Here 'Code' came as a response of keycloak after login)
+    const { code } = req.query;
 
     if (!code) {
       return res.status(400).json({ error: "Authorization code missing" });
@@ -69,6 +63,7 @@ module.exports = (keycloak) => {
         { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
       );
 
+      //extract response data after axios request
       const { access_token, refresh_token, expires_in } = response.data;
 
       // Store tokens in HTTP-only cookies
@@ -103,7 +98,7 @@ module.exports = (keycloak) => {
     }
   });
 
-  // Logout endpoint
+  // Logout endpoint 
   router.get("/logout", (req, res) => {
     res.clearCookie("jwt");
     res.clearCookie("refresh");
@@ -115,25 +110,15 @@ module.exports = (keycloak) => {
     res.redirect(logoutUrl);
   });
 
-  //Check authenticated status
+  //Check authenticated status from frontend
   router.get("/check", (req, res) => {
-    // console.log("Session Data on /check:", req.session); // Debugging
-    // console.log("Cookies in request:", req.headers.cookie); // Debugging
-
-    // if (req.session.authenticated) {
-    //   console.log("User is authenticated in session.");
-    //   return res.status(200).json({ authenticated: true });
-    // } else {
-    //   console.log("User NOT authenticated in session.");
-    //   return res.status(401).json({ authenticated: false });
-    // }
     if (req.cookies.jwt) {
       return res.status(200).json({ authenticated: true });
     }
     return res.status(401).json({ authenticated: false });
   });
 
-  //refresh token endpoint
+  //refresh token endpoint that call from frontend
   router.get("/refresh", async (req, res) => {
     const refreshToken = req.cookies.refresh;
   
@@ -143,7 +128,8 @@ module.exports = (keycloak) => {
   
     try {
       const tokenEndpoint = `${process.env.KEYCLOAK_AUTH_SERVER_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/token`;
-  
+      
+      //sends a request to Keycloak to exchange the refresh token for a new access token
       const response = await axios.post(
         tokenEndpoint,
         new URLSearchParams({
@@ -157,7 +143,7 @@ module.exports = (keycloak) => {
   
       const { access_token, refresh_token, expires_in } = response.data;
   
-      // Update cookies
+      // Update cookies with the new tokens
       res.cookie("jwt", access_token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
