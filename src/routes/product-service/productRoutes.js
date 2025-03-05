@@ -7,7 +7,7 @@ module.exports = (keycloak) => {
   const router = express.Router();
   // --- Define Routes ---
 
-  // Route to save a product
+  // Route to save a product 
   router.post("/save-product",authenticateUser,idempotencyMiddleware, productController.saveProduct);
 
   // Route to get all products with optional sorting

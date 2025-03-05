@@ -100,6 +100,9 @@ async function idempotencyMiddleware(req, res, next) {
   const requestId = req.headers["x-idempotency-key"];
   const userId = req.user?.id || "guest";
 
+  // Declare lockKey up here so it's in scope for the finally block
+  let lockKey = "";
+
   if (!requestId) {
     return res.status(400).json({ error: "Missing X-Idempotency-Key header" });
   }
@@ -107,29 +110,29 @@ async function idempotencyMiddleware(req, res, next) {
   try {
     console.log(`Processing request: ${requestId} for user: ${userId}`);
 
-    // 1) Check Redis for existing record
-    //    If we used hSet previously, use hGetAll now:
+    // 🔹 Step 1: Check if request is already processed (Retrieve from Redis)
     const existingData = await redisClient.hGetAll(`idempotency:${requestId}`);
+    if (existingData && existingData.status === "processed") {
+      console.log(`Returning cached response for request ${requestId}`);
 
-    // hGetAll() returns an object of strings, or {} if none found.
-    // For example: { userId: 'guest', status: 'processed', responsePayload: '{"foo":"bar"}' }
-    if (existingData.status === "processed") {
-      console.log("Returning cached response from Redis");
-      return res.status(200).json(JSON.parse(existingData.responsePayload));
+      try {
+        const cachedResponse = JSON.parse(existingData.responsePayload);
+        return res.status(200).json(cachedResponse);
+      } catch (parseError) {
+        console.error("Error parsing cached response:", parseError);
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
     }
 
-    // 2) Acquire a "lock" so only one request processes
-    const lockKey = `idempotency:${requestId}:lock`;
-    // Using NX: true => set only if not exists; EX: 60 => expires in 60s
+    // 🔹 Step 2: Acquire a lock to prevent duplicate processing
+    lockKey = `idempotency:${requestId}:lock`; // assign here
     const lockResult = await redisClient.set(lockKey, "locked", { NX: true, EX: 60 });
     if (!lockResult) {
-      console.log("Another request is processing this ID. Waiting...");
-      return res
-        .status(429)
-        .json({ error: "Duplicate request detected. Try again later." });
+      console.log(`Another request is processing this ID: ${requestId}. Rejecting duplicate.`);
+      return res.status(429).json({ error: "Duplicate request detected. Try again later." });
     }
 
-    // 3) Mark this request as "pending"
+    // 🔹 Step 3: Mark request as "pending" in Redis
     await redisClient.hSet(`idempotency:${requestId}`, {
       userId,
       status: "pending",
@@ -137,7 +140,7 @@ async function idempotencyMiddleware(req, res, next) {
     });
     await redisClient.expire(`idempotency:${requestId}`, 3600); // Expire in 1 hour
 
-    // 4) Override res.json so we can store final response in Redis & DB
+    // 🔹 Step 4: Override `res.json` to store final response in Redis & DB
     res.sendResponse = res.json;
     res.json = async (body) => {
       // Store final response in Redis
@@ -147,7 +150,7 @@ async function idempotencyMiddleware(req, res, next) {
       });
       console.log(`Request ${requestId} processed successfully (Stored in Redis)`);
 
-      // Also write to DB with Circuit Breaker
+      // Write to DB with Circuit Breaker
       try {
         await dbCircuitBreaker.execute(async () => {
           await pool.query(
@@ -167,7 +170,7 @@ async function idempotencyMiddleware(req, res, next) {
         await redisClient.sAdd("failed_db_sync", requestId);
       }
 
-      // Finally, send the HTTP response
+      // Send the response to the client
       res.sendResponse(body);
     };
 
@@ -178,10 +181,13 @@ async function idempotencyMiddleware(req, res, next) {
     console.error("Redis error:", error);
     return res.status(500).json({ error: "Internal Server Error" });
   } finally {
-    // 5) Release the lock in a promise-based way
+    // 🔹 Step 5: Release the lock **ONLY IF request is processed**
     try {
-      const delResult = await redisClient.del(`idempotency:${requestId}:lock`);
-      console.log(`Lock DEL result: ${delResult}`);
+      const requestStatus = await redisClient.hGet(`idempotency:${requestId}`, "status");
+      if (requestStatus === "processed") {
+        await redisClient.del(lockKey);  // lockKey is accessible here now
+        console.log(`Lock released for ${requestId}`);
+      }
     } catch (err) {
       console.error("Redis DEL error:", err);
     }

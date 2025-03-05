@@ -133,6 +133,7 @@ module.exports = (keycloak) => {
     return res.status(401).json({ authenticated: false });
   });
 
+  //refresh token endpoint
   router.get("/refresh", async (req, res) => {
     const refreshToken = req.cookies.refresh;
   

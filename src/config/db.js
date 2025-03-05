@@ -1,28 +1,31 @@
 const { Pool } = require("pg");
+require("dotenv").config();
+
+const isLocalhost = process.env.DB_URL.includes("localhost");
 
 const pool = new Pool({
   connectionString: process.env.DB_URL,
-  max: process.env.DB_MAX_CONNECTIONS || 20, // Max number of connections (adjust based on server capacity)
-  idleTimeoutMillis: process.env.DB_IDLE_TIMEOUT || 30000, // Close idle connections after 30 sec
-  connectionTimeoutMillis: process.env.DB_CONNECTION_TIMEOUT || 20000, // Return error if connection takes longer than 20 sec
-  ssl: process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : false,
+  max: process.env.DB_MAX_CONNECTIONS || 20,
+  idleTimeoutMillis: process.env.DB_IDLE_TIMEOUT || 30000,
+  connectionTimeoutMillis: process.env.DB_CONNECTION_TIMEOUT || 20000,
+  ssl: isLocalhost ? false : { rejectUnauthorized: false }, // Disable SSL for localhost
 });
 
 pool.on("connect", () => {
-    console.log("Connected to PostgreSQL");
+  console.log("Connected to PostgreSQL");
 });
 
 pool.on("error", (err) => {
-    console.error("Unexpected error on idle client", err);
-    process.exit(-1);
+  console.error("Unexpected error on idle client", err);
+  process.exit(-1);
 });
 
 pool.on("acquire", () => {
-    console.log("Connection acquired from pool");
+  console.log("Connection acquired from pool");
 });
 
 pool.on("remove", () => {
-    console.log("Connection removed from pool");
+  console.log("Connection removed from pool");
 });
 
 module.exports = pool;
