@@ -1,16 +1,17 @@
 const express = require("express");
 const cartController = require("../../controllers/order-service/cartController");
 const authenticateUser = require("../../middlewares/authMiddleware");
+const idempotencyMiddleware = require("../../middlewares/idempotencyMiddleware");
 
 module.exports = (keycloak) => {
   const router = express.Router();
   // --- Define Routes ---
 
   // Route to add item
-  router.post("/add-item-to-cart",authenticateUser, cartController.addToCart);
+  router.post("/add-item-to-cart", authenticateUser, idempotencyMiddleware, cartController.addToCart);
 
   // Route to remove item
-  router.delete("/remove-item-from-cart",authenticateUser, cartController.removeCartItem);
+  router.post("/remove-item-from-cart",authenticateUser, idempotencyMiddleware, cartController.removeCartItem);
 
   // Route to get cart details by user id
   router.get("/get-cart-items-by-user-id",authenticateUser, cartController.getCartItemsByUserId);

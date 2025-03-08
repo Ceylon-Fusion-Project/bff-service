@@ -8,7 +8,7 @@ exports.addToCart = async (req, res) => {
       data: data,
     });
   } catch (error) {
-    res.status(404).json({ message: error.message });
+    res.status(405).json({ message: error.message });
   }
 };
 
@@ -20,7 +20,7 @@ exports.removeCartItem= async (req, res) => {
         data: data,
       });
     } catch (error) {
-      res.status(404).json({ message: error.message });
+      res.status(405).json({ message: error.message });
     }
   };
 

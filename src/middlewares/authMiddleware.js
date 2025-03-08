@@ -72,15 +72,19 @@ const authenticateUser = async (req, res, next) => {
         // Store the new tokens in cookies
         res.cookie("jwt", newTokens.access_token, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
+          // secure: process.env.NODE_ENV === "production",
+        // sameSite: "lax",
+        sameSite: "None",
+        secure: true, // Required when sameSite is None
           maxAge: newTokens.expires_in * 1000,
         });
 
         res.cookie("refresh", newTokens.refresh_token, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
+          // secure: process.env.NODE_ENV === "production",
+        // sameSite: "lax",
+        sameSite: "None",
+        secure: true, // Required when sameSite is None
           maxAge: 24 * 60 * 60 * 1000,
         });
 
