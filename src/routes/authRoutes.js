@@ -44,9 +44,13 @@ module.exports = (keycloak) => {
     // (Here 'Code' came as a response of keycloak after login)
     const { code } = req.query;
 
+    // if (!code) {
+    //   return res.status(400).json({ error: "Authorization code missing" });
+    // }
     if (!code) {
-      return res.status(400).json({ error: "Authorization code missing" });
+      return sendErrorResponse(res, 400, "Authorization code missing");
     }
+    
 
     try {
       // Exchange authorization code for JWT tokens
@@ -74,8 +78,10 @@ module.exports = (keycloak) => {
         httpOnly: true,
         // secure: process.env.NODE_ENV === "production",
         // sameSite: "lax",
-        sameSite: "None",
-        secure: true, // Required when sameSite is None
+        //secure: true,
+        sameSite: 'none',
+        secure: true,
+        //secure: false,//for development
         maxAge: expires_in * 1000, // Convert expiration to milliseconds
       });
 
@@ -83,8 +89,10 @@ module.exports = (keycloak) => {
         httpOnly: true,
        // secure: process.env.NODE_ENV === "production",
         // sameSite: "lax",
-        sameSite: "None",
+        //secure: true,
+        sameSite: 'none',
         secure: true, // Required when sameSite is None
+        //secure: false,//for development
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
       });
 
@@ -101,7 +109,7 @@ module.exports = (keycloak) => {
         "Error during token exchange:",
         error.response?.data || error.message
       );
-      res.status(500).json({ error: "Token exchange failed" });
+      return sendErrorResponse(res, 500, "Token exchange failed");
     }
   });
 
@@ -136,7 +144,7 @@ module.exports = (keycloak) => {
       });
     } catch (err) {
       console.error("Logout error:", error);
-      res.status(500).json({ error: "Logout failed" });
+      return sendErrorResponse(res, 500, "Logout failed");
     }
   });
 
@@ -146,7 +154,7 @@ module.exports = (keycloak) => {
     if (req.cookies.jwt) {
       return res.status(200).json({ authenticated: true });
     }
-    return res.status(401).json({ authenticated: false });
+    return sendErrorResponse(res, 401, "Not authenticated. Please log in.");
   });
 
   //refresh token endpoint that call from frontend
@@ -154,7 +162,7 @@ module.exports = (keycloak) => {
     const refreshToken = req.cookies.refresh;
   
     if (!refreshToken) {
-      return res.status(401).json({ message: "No refresh token found" });
+      return sendErrorResponse(res, 401, "Refresh token missing");
     }
   
     try {
@@ -179,8 +187,9 @@ module.exports = (keycloak) => {
         httpOnly: true,
         // secure: process.env.NODE_ENV === "production",
         // sameSite: "lax",
-        sameSite: "None",
-        secure: true, // Required when sameSite is None
+        sameSite: "none",
+        secure: true,
+        //secure: false,//for development
         maxAge: expires_in * 1000,
       });
   
@@ -188,8 +197,10 @@ module.exports = (keycloak) => {
         httpOnly: true,
         // secure: process.env.NODE_ENV === "production",
         // sameSite: "lax",
-        sameSite: "None",
+        //secure: true,
+        sameSite:'none',
         secure: true, // Required when sameSite is None
+        //secure: false,//for development
         maxAge: 24 * 60 * 60 * 1000,
       });
   

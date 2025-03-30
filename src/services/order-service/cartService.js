@@ -11,6 +11,17 @@ exports.addToCart = async (req) => {
   return response.data;
 };
 
+exports.addToCartToggle = async (req) => {
+  const token = req.cookies.jwt;
+  if (!token) throw new Error("Unauthorized");
+  const url = `${process.env.API_GATEWAY_URL}/order-service/api/v1/cart/add-item-to-cart`;
+
+  const response = await axios.post(url, req.body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });  
+  return response.data;
+};
+
 exports.removeCartItem = async (req) => {
   const token = req.cookies.jwt;
   if (!token) throw new Error("Unauthorized");
@@ -19,7 +30,17 @@ exports.removeCartItem = async (req) => {
   const response = await axios.post(url,req.body, {
     headers: { Authorization: `Bearer ${token}` },
   });
+  return response.data;
+};
 
+exports.removeCartItemToggle = async (req) => {
+  const token = req.cookies.jwt;
+  if (!token) throw new Error("Unauthorized");
+  const url = `${process.env.API_GATEWAY_URL}/order-service/api/v1/cart/remove-item-from-cart`;
+
+  const response = await axios.post(url,req.body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return response.data;
 };
 

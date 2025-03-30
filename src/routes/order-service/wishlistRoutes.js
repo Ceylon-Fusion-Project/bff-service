@@ -10,7 +10,7 @@ module.exports = (keycloak) => {
   router.post("/add-item-to-wishlist",authenticateUser, wishlistController.addToWishlist);
 
   // Route to remove item
-  router.delete("/remove-item-from-wishlist",authenticateUser, wishlistController.removeFromWishlist);
+  router.post("/remove-item-from-wishlist",authenticateUser, wishlistController.removeFromWishlist);
 
   // Route to get cart details by user id
   router.get("/get-wishlist-by-user-id",authenticateUser, wishlistController.getWishlist);

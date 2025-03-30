@@ -9,9 +9,11 @@ module.exports = (keycloak) => {
 
   // Route to add item
   router.post("/add-item-to-cart", authenticateUser, idempotencyMiddleware, cartController.addToCart);
+  router.post("/add-item-to-cart-byCard", authenticateUser, cartController.addToCartToggle);
 
   // Route to remove item
   router.post("/remove-item-from-cart",authenticateUser, idempotencyMiddleware, cartController.removeCartItem);
+  router.post("/remove-item-from-cart-byCard",authenticateUser, cartController.removeCartItemToggle);
 
   // Route to get cart details by user id
   router.get("/get-cart-items-by-user-id",authenticateUser, cartController.getCartItemsByUserId);
