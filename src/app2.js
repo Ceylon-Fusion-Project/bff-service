@@ -54,6 +54,9 @@ app.use(cors({
   allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization", "X-Idempotency-Key"], // ✅ Include custom header
 }));
 
+// If behind a proxy like NGINX or Vite dev server
+app.set('trust proxy', 1); // Trust first proxy (if applicable)
+
 // Handle Preflight Requests
 app.options("*", cors());
 

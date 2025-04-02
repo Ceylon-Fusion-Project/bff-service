@@ -33,7 +33,7 @@ exports.updateCertificateDetails = async (req) => {
   const token = req.cookies.jwt;
   if (!token) throw new Error("Unauthorized");
   const { certificationID } = req.query;
-  const url = `${process.env.PRODUCT_MS_URL}/product-service/api/v1/certificate/update-certificate`;
+  const url = `${process.env.API_GATEWAY_URL}/product-service/api/v1/certificate/update-certificate`;
 
   const response = await axios.patch(url, req.body, {
     headers: { Authorization: `Bearer ${token}` },
@@ -48,12 +48,24 @@ exports.deleteCertificateByID = async (req) => {
   const token = req.cookies.jwt;
   if (!token) throw new Error("Unauthorized");
   const { certificationID } = req.query;
-  const url = `${process.env.PRODUCT_MS_URL}/product-service/api/v1/certificate/delete-certificate-by-id`;
+  const url = `${process.env.API_GATEWAY_URL}/product-service/api/v1/certificate/delete-certificate-by-id`;
 
   const response = await axios.delete(url, {
     headers: { Authorization: `Bearer ${token}` },
     params: { certificationID },
   });
 
+  return response.data;
+};
+
+exports.getCertifications = async (req) => {
+  const { page, size } = req.query;
+  const url = `${process.env.API_GATEWAY_URL}/product-service/api/v1/certificate/get-all-certificates`;
+  const response = await axios.get(url, {
+      params: {
+        page,
+        size,
+      },
+  });
   return response.data;
 };

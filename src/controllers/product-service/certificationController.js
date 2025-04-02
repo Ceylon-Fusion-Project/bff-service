@@ -48,3 +48,15 @@ exports.getCertificateById = async (req, res) => {
     res.status(404).json({ message: error.message });
   }
 };
+
+exports.getAllCertifications = async (req, res) => {
+  try {
+    const data = await certService.getCertifications(req);
+    res.status(200).json({
+      message: "All Certifications Fetched Successfully",
+      data: data,
+    });
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
+};

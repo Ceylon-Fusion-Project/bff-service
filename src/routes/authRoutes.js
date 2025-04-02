@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
+const authenticateUser = require("../middlewares/authMiddleware");
 
 module.exports = (keycloak) => {
   router.get("/login", (req, res) => {
@@ -26,7 +27,7 @@ module.exports = (keycloak) => {
   });
 
   // Registration endpoint
-  router.get("/register", (req, res) => {
+  router.get("/signup", (req, res) => {
     const registerUrl =
       `${process.env.KEYCLOAK_AUTH_SERVER_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/registrations` +
       `?client_id=${process.env.KEYCLOAK_CLIENT_ID}` +
@@ -43,9 +44,13 @@ module.exports = (keycloak) => {
     // (Here 'Code' came as a response of keycloak after login)
     const { code } = req.query;
 
+    // if (!code) {
+    //   return res.status(400).json({ error: "Authorization code missing" });
+    // }
     if (!code) {
-      return res.status(400).json({ error: "Authorization code missing" });
+      return sendErrorResponse(res, 400, "Authorization code missing");
     }
+    
 
     try {
       // Exchange authorization code for JWT tokens
@@ -65,19 +70,29 @@ module.exports = (keycloak) => {
 
       //extract response data after axios request
       const { access_token, refresh_token, expires_in } = response.data;
+      console.log("🔑 Received Access Token:", access_token); // ✅ Log Access Token
+      console.log("🔄 Received Refresh Token:", refresh_token);
 
       // Store tokens in HTTP-only cookies
       res.cookie("jwt", access_token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        // secure: process.env.NODE_ENV === "production",
+        // sameSite: "lax",
+        //secure: true,
+        sameSite: 'none',
+        secure: true,
+        //secure: false,//for development
         maxAge: expires_in * 1000, // Convert expiration to milliseconds
       });
 
       res.cookie("refresh", refresh_token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+       // secure: process.env.NODE_ENV === "production",
+        // sameSite: "lax",
+        //secure: true,
+        sameSite: 'none',
+        secure: true, // Required when sameSite is None
+        //secure: false,//for development
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
       });
 
@@ -94,28 +109,52 @@ module.exports = (keycloak) => {
         "Error during token exchange:",
         error.response?.data || error.message
       );
-      res.status(500).json({ error: "Token exchange failed" });
+      return sendErrorResponse(res, 500, "Token exchange failed");
     }
   });
 
   // Logout endpoint 
-  router.get("/logout", (req, res) => {
-    res.clearCookie("jwt");
-    res.clearCookie("refresh");
+  router.get("/logout", async (req, res) => {
 
-    const logoutUrl =
+    try {
+      const refreshToken = req.cookies.refresh;
+
+      if (refreshToken) {
+        //call Keycloak to revoke the refresh token
+        await axios.post(
+          `${process.env.KEYCLOAK_AUTH_SERVER_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/logout`,
+          new URLSearchParams({
+            client_id: process.env.KEYCLOAK_CLIENT_ID,
+            client_secret: process.env.KEYCLOAK_CLIENT_SECRET,
+            refresh_token: refreshToken,
+          }),
+          {headers: {"content-Type": "application/x-www-form-urlencoded"}}
+        );
+      }
+
+      res.clearCookie("jwt", { httpOnly: true, sameSite: "None", secure: true });
+      res.clearCookie("refresh", { httpOnly: true, sameSite: "None", secure: true });
+
+      const logoutUrl =
       `${process.env.KEYCLOAK_AUTH_SERVER_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/logout?redirect_uri=${process.env.FRONTEND_URL}`;
 
-    req.session.destroy();
-    res.redirect(logoutUrl);
+      req.session.destroy((err) => {
+        if (err) console.error("Error destroying session",err);
+        res.redirect(logoutUrl);
+      });
+    } catch (err) {
+      console.error("Logout error:", error);
+      return sendErrorResponse(res, 500, "Logout failed");
+    }
   });
 
   //Check authenticated status from frontend
-  router.get("/check", (req, res) => {
+  router.get("/check",authenticateUser, (req, res) => {
+    console.log("🔍 Checking Auth. Cookies:", req.cookies); // ✅ Log received cookies
     if (req.cookies.jwt) {
       return res.status(200).json({ authenticated: true });
     }
-    return res.status(401).json({ authenticated: false });
+    return sendErrorResponse(res, 401, "Not authenticated. Please log in.");
   });
 
   //refresh token endpoint that call from frontend
@@ -123,7 +162,7 @@ module.exports = (keycloak) => {
     const refreshToken = req.cookies.refresh;
   
     if (!refreshToken) {
-      return res.status(401).json({ message: "No refresh token found" });
+      return sendErrorResponse(res, 401, "Refresh token missing");
     }
   
     try {
@@ -146,15 +185,22 @@ module.exports = (keycloak) => {
       // Update cookies with the new tokens
       res.cookie("jwt", access_token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        // secure: process.env.NODE_ENV === "production",
+        // sameSite: "lax",
+        sameSite: "none",
+        secure: true,
+        //secure: false,//for development
         maxAge: expires_in * 1000,
       });
   
       res.cookie("refresh", refresh_token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        // secure: process.env.NODE_ENV === "production",
+        // sameSite: "lax",
+        //secure: true,
+        sameSite:'none',
+        secure: true, // Required when sameSite is None
+        //secure: false,//for development
         maxAge: 24 * 60 * 60 * 1000,
       });
   

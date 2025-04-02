@@ -8,6 +8,9 @@ module.exports = (keycloak) => {
   
     // Route to save a certificate
     router.post("/save-certificate",authenticateUser, certController.saveCertificate);
+
+    // Route to get all certifications
+    router.get("/get-all-certificates", certController.getAllCertifications);
   
     // Route to get certificate details by product ID
     router.get("/get-certificate-by-product-id", certController.getCertificateById);

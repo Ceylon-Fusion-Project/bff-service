@@ -84,6 +84,7 @@ exports.getProductByFiltering = async (req) => {
     sort,
     page,
     size,
+    category,
   } = req.query;
 
   const url = `${process.env.API_GATEWAY_URL}/product-service/api/v1/product/get-product-by-filtering`;
@@ -101,6 +102,7 @@ exports.getProductByFiltering = async (req) => {
       sort,
       page,
       size,
+      category,
     }).filter(([_, value]) => value !== undefined)
   );
 

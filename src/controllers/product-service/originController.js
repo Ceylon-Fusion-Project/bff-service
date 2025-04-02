@@ -48,3 +48,15 @@ exports.getOriginById = async (req, res) => {
     res.status(404).json({ message: error.message });
   }
 };
+
+exports.getAllOrigins = async (req, res) => {
+  try {
+    const data = await originService.getAllOrigins(req);
+    res.status(200).json({
+      message: "All Origins Fetched Successfully",
+      data: data,
+    });
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
+};
