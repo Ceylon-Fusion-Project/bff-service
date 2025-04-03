@@ -2,10 +2,18 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 const authenticateUser = require("../middlewares/authMiddleware");
+const { sendErrorResponse } = require('../utils/sendErrorResponse');
+
 
 module.exports = (keycloak) => {
   router.get("/login", (req, res) => {
-    const redirectUrl = "http://localhost:5173";  // Frontend URL where users go after login
+    // const redirectUrl = "http://localhost:5173";
+    // Frontend URL where users go after login
+    const frontendRedirect = req.query.redirectTo || "/";
+    const redirectUrl = `http://localhost:5173${frontendRedirect}`;
+
+    console.log("📦 Storing afterLogin in session:", redirectUrl);
+
     const loginUrl =
       process.env.KEYCLOAK_AUTH_SERVER_URL +
       `/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/auth` +
@@ -50,7 +58,6 @@ module.exports = (keycloak) => {
     if (!code) {
       return sendErrorResponse(res, 400, "Authorization code missing");
     }
-    
 
     try {
       // Exchange authorization code for JWT tokens
@@ -79,7 +86,7 @@ module.exports = (keycloak) => {
         // secure: process.env.NODE_ENV === "production",
         // sameSite: "lax",
         //secure: true,
-        sameSite: 'none',
+        sameSite: "none",
         secure: true,
         //secure: false,//for development
         maxAge: expires_in * 1000, // Convert expiration to milliseconds
@@ -87,10 +94,10 @@ module.exports = (keycloak) => {
 
       res.cookie("refresh", refresh_token, {
         httpOnly: true,
-       // secure: process.env.NODE_ENV === "production",
+        // secure: process.env.NODE_ENV === "production",
         // sameSite: "lax",
         //secure: true,
-        sameSite: 'none',
+        sameSite: "none",
         secure: true, // Required when sameSite is None
         //secure: false,//for development
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
@@ -98,12 +105,13 @@ module.exports = (keycloak) => {
 
       req.session.authenticated = true;
 
-    const redirectUrl = req.session.afterLogin || process.env.FRONTEND_URL;
-    delete req.session.afterLogin;
+      const redirectUrl = req.session.afterLogin || process.env.FRONTEND_URL;
+      console.log("🔁 Redirecting user to:", redirectUrl); //log
+      delete req.session.afterLogin;
 
-    req.session.save(() => {
-      res.redirect(redirectUrl);
-    });
+      req.session.save(() => {
+        res.redirect(redirectUrl);
+      });
     } catch (error) {
       console.error(
         "Error during token exchange:",
@@ -113,9 +121,8 @@ module.exports = (keycloak) => {
     }
   });
 
-  // Logout endpoint 
+  // Logout endpoint
   router.get("/logout", async (req, res) => {
-
     try {
       const refreshToken = req.cookies.refresh;
 
@@ -128,18 +135,25 @@ module.exports = (keycloak) => {
             client_secret: process.env.KEYCLOAK_CLIENT_SECRET,
             refresh_token: refreshToken,
           }),
-          {headers: {"content-Type": "application/x-www-form-urlencoded"}}
+          { headers: { "content-Type": "application/x-www-form-urlencoded" } }
         );
       }
 
-      res.clearCookie("jwt", { httpOnly: true, sameSite: "None", secure: true });
-      res.clearCookie("refresh", { httpOnly: true, sameSite: "None", secure: true });
+      res.clearCookie("jwt", {
+        httpOnly: true,
+        sameSite: "None",
+        secure: true,
+      });
+      res.clearCookie("refresh", {
+        httpOnly: true,
+        sameSite: "None",
+        secure: true,
+      });
 
-      const logoutUrl =
-      `${process.env.KEYCLOAK_AUTH_SERVER_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/logout?redirect_uri=${process.env.FRONTEND_URL}`;
+      const logoutUrl = `${process.env.KEYCLOAK_AUTH_SERVER_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/logout?redirect_uri=${process.env.FRONTEND_URL}`;
 
       req.session.destroy((err) => {
-        if (err) console.error("Error destroying session",err);
+        if (err) console.error("Error destroying session", err);
         res.redirect(logoutUrl);
       });
     } catch (err) {
@@ -149,7 +163,7 @@ module.exports = (keycloak) => {
   });
 
   //Check authenticated status from frontend
-  router.get("/check",authenticateUser, (req, res) => {
+  router.get("/check", authenticateUser, (req, res) => {
     console.log("🔍 Checking Auth. Cookies:", req.cookies); // ✅ Log received cookies
     if (req.cookies.jwt) {
       return res.status(200).json({ authenticated: true });
@@ -160,14 +174,14 @@ module.exports = (keycloak) => {
   //refresh token endpoint that call from frontend
   router.get("/refresh", async (req, res) => {
     const refreshToken = req.cookies.refresh;
-  
+
     if (!refreshToken) {
       return sendErrorResponse(res, 401, "Refresh token missing");
     }
-  
+
     try {
       const tokenEndpoint = `${process.env.KEYCLOAK_AUTH_SERVER_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/token`;
-      
+
       //sends a request to Keycloak to exchange the refresh token for a new access token
       const response = await axios.post(
         tokenEndpoint,
@@ -179,9 +193,9 @@ module.exports = (keycloak) => {
         }),
         { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
       );
-  
+
       const { access_token, refresh_token, expires_in } = response.data;
-  
+
       // Update cookies with the new tokens
       res.cookie("jwt", access_token, {
         httpOnly: true,
@@ -192,24 +206,27 @@ module.exports = (keycloak) => {
         //secure: false,//for development
         maxAge: expires_in * 1000,
       });
-  
+
       res.cookie("refresh", refresh_token, {
         httpOnly: true,
         // secure: process.env.NODE_ENV === "production",
         // sameSite: "lax",
         //secure: true,
-        sameSite:'none',
+        sameSite: "none",
         secure: true, // Required when sameSite is None
         //secure: false,//for development
         maxAge: 24 * 60 * 60 * 1000,
       });
-  
+
       res.status(200).json({ message: "Token refreshed" });
     } catch (error) {
-      console.error("Token refresh failed:", error.response?.data || error.message);
+      console.error(
+        "Token refresh failed:",
+        error.response?.data || error.message
+      );
       res.status(403).json({ error: "Refresh failed" });
     }
-  });  
+  });
 
   return router;
 };
