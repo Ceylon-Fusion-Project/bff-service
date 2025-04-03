@@ -1,5 +1,6 @@
 const express = require("express");
 const { redisCircuitBreaker } = require("../utils/circuitBreaker");
+const { redisClient } = require("../config/redis");
 
 module.exports = (keycloak) => {
   const router = express.Router();
@@ -21,6 +22,9 @@ module.exports = (keycloak) => {
   // Import route handlers: UPLOAD_SERVICE
   const uploadService = require("./upload-service/uploadRoutes")(keycloak);
 
+  // Import Aggregate Routes
+  const aggregatedCartRoute = require("./aggregated-service/aggregatedCartRoute")(keycloak);
+
   //____________________________________________________________________________________
   //
   //  --- Route Aggregation ---
@@ -34,7 +38,7 @@ module.exports = (keycloak) => {
   router.use("/api/v1/certifications", certificationRoutes);
   router.use("/api/v1/ratings", ratingRoutes);
   router.use("/api/v1/origin", originRoutes);
- 
+
   //Register routes: UPLOAD_SERVICES
   router.use("/api/v1/upload", uploadService);
 
@@ -42,6 +46,9 @@ module.exports = (keycloak) => {
   router.use("/api/v1/orders", orderRoutes);
   router.use("/api/v1/cart", cartRoutes);
   router.use("/api/v1/wishlist", wishlistRoutes);
+
+  // Aggregated Route for Cart (requires data from OrderMS + ProductMS)
+  router.use("/api/v1/aggregated-cart", aggregatedCartRoute);
 
   router.get("/health", async (req, res) => {
     try {
