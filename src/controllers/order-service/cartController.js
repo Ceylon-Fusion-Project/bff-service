@@ -60,4 +60,28 @@ exports.removeCartItem= async (req, res) => {
     }
   };
 
+  exports.increaseCartCount= async (req, res) => {
+    try {
+      const data = await cartService.increaseCartCount(req);
+      res.status(200).json({
+        message: "Increase Cart Count Successfully",
+        data: data,
+      });
+    } catch (error) {
+      res.status(405).json({ message: error.message });
+    }
+  };
+
+  exports.decreaseCartCount= async (req, res) => {
+    try {
+      const data = await cartService.decreaseCartCount(req);
+      res.status(200).json({
+        message: "Decrease Cart Count Successfully",
+        data: data,
+      });
+    } catch (error) {
+      res.status(405).json({ message: error.message });
+    }
+  };
+
   

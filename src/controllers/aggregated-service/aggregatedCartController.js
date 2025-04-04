@@ -9,3 +9,4 @@ exports.getMergedCart = async (req, res) => {
     res.status(502).json({ error: "Failed to fetch cart data." });
   }
 };
+

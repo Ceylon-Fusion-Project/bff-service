@@ -56,3 +56,23 @@ exports.getCartItemsByUserId = async (req) => {
     },
   });
 };
+
+exports.increaseCartCount = async (req) => {
+  const token = req.cookies.jwt;
+  if (!token) throw new Error("Unauthorized");
+  const url = `${process.env.API_GATEWAY_URL}/order-service/api/v1/cart/increment-item`;
+  const response = await axios.post(url,req.body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+}
+
+exports.decreaseCartCount = async (req) => {
+  const token = req.cookies.jwt;
+  if (!token) throw new Error("Unauthorized");
+  const url = `${process.env.API_GATEWAY_URL}/order-service/api/v1/cart/decrement-item`;
+  const response = await axios.post(url,req.body, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+}
