@@ -19,6 +19,9 @@ module.exports = (keycloak) => {
   const cartRoutes = require("./order-service/cartRoutes")(keycloak);
   const wishlistRoutes = require("./order-service/wishlistRoutes")(keycloak);
 
+  // Import route handlers: BOOKING_SERVICE
+  const accommodationRoutes = require("./booking-service/accommodationRoutes")(keycloak);
+
   // Import route handlers: UPLOAD_SERVICE
   const uploadService = require("./upload-service/uploadRoutes")(keycloak);
 
@@ -47,6 +50,9 @@ module.exports = (keycloak) => {
   router.use("/api/v1/orders", orderRoutes);
   router.use("/api/v1/cart", cartRoutes);
   router.use("/api/v1/wishlist", wishlistRoutes);
+
+  //Register routes: BOOKING_SERVICES
+  router.use("/api/v1/accommodation", accommodationRoutes);
 
   // Aggregated Route for Cart (requires data from OrderMS + ProductMS)
   router.use("/api/v1/aggregated-cart", aggregatedCartRoute);
