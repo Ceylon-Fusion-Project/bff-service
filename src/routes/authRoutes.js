@@ -2,8 +2,8 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 const authenticateUser = require("../middlewares/authMiddleware");
-const { sendErrorResponse } = require('../utils/sendErrorResponse');
-
+const { sendErrorResponse } = require("../utils/sendErrorResponse");
+const jwt = require("jsonwebtoken");
 
 module.exports = (keycloak) => {
   router.get("/login", (req, res) => {
@@ -24,12 +24,15 @@ module.exports = (keycloak) => {
       )}` +
       `&scope=openid`;
 
+    // Store the redirect URL in the session
     req.session.afterLogin = redirectUrl;
     req.session.save((err) => {
       if (err) {
         console.error("Session save error:", err);
         return res.status(500).json({ error: "Session not saved" });
       }
+
+      //redirect to Keycloak login page
       return res.redirect(loginUrl);
     });
   });
@@ -43,6 +46,8 @@ module.exports = (keycloak) => {
       `&redirect_uri=${encodeURIComponent(
         process.env.BFF_URL + "/api/v1/auth/callback"
       )}`;
+
+    // Redirect to Keycloak registration page
     res.redirect(registerUrl);
   });
 
@@ -52,9 +57,6 @@ module.exports = (keycloak) => {
     // (Here 'Code' came as a response of keycloak after login)
     const { code } = req.query;
 
-    // if (!code) {
-    //   return res.status(400).json({ error: "Authorization code missing" });
-    // }
     if (!code) {
       return sendErrorResponse(res, 400, "Authorization code missing");
     }
@@ -77,8 +79,16 @@ module.exports = (keycloak) => {
 
       //extract response data after axios request
       const { access_token, refresh_token, expires_in } = response.data;
+
       console.log("🔑 Received Access Token:", access_token); // ✅ Log Access Token
       console.log("🔄 Received Refresh Token:", refresh_token);
+
+      // Decode token to get role and user ID
+      const decoded = jwt.decode(access_token);
+      const keycloakId = decoded?.sub;
+      const roles = (decoded?.realm_access?.roles || []).map((r) =>
+        r.toLowerCase()
+      );
 
       // Store tokens in HTTP-only cookies
       res.cookie("jwt", access_token, {
@@ -103,13 +113,28 @@ module.exports = (keycloak) => {
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
       });
 
+      // set session authenticated as true
       req.session.authenticated = true;
+      req.session.keycloakId = keycloakId;
 
-      const redirectUrl = req.session.afterLogin || process.env.FRONTEND_URL;
+      const frontendBase = process.env.FRONTEND_URL || "http://localhost:5173";
+      let redirectUrl;
+
+      if (roles.includes("owner")) {
+        redirectUrl = `${frontendBase}/admin`;
+      } else {
+        redirectUrl = req.session.afterLogin || frontendBase;
+      }
+
+      //const redirectUrl = req.session.afterLogin || process.env.FRONTEND_URL;
+
       console.log("🔁 Redirecting user to:", redirectUrl); //log
+
+      // Clear the afterLogin session variable after redirecting
       delete req.session.afterLogin;
 
       req.session.save(() => {
+        //redirect to the last page user was redirected
         res.redirect(redirectUrl);
       });
     } catch (error) {
