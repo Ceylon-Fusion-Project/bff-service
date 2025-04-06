@@ -29,6 +29,12 @@ exports.getAllAccommodation = async (req) => {
   return response.data;
 };
 
+exports.getEntireAccommodations = async () => {
+    const url = `${process.env.API_GATEWAY_URL}/booking-service/api/v1/accommodations/get-all-accommodations`;
+    const response = await axios.get(url);
+    return response.data;
+  };
+
 exports.getAccommodationById = async (req) => {
   const { id } = req.query;
   const url = `${process.env.API_GATEWAY_URL}/booking-service/api/v1/accommodations/get-accommodation-details-by-id`;

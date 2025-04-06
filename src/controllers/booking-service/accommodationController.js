@@ -72,3 +72,15 @@ exports.getAllAccommodation = async (req, res) => {
     res.status(404).json({ message: error.message });
   }
 };
+
+exports.getEntireAccommodation = async (req, res) => {
+  try {
+    const data = await accommodationService.getEntireAccommodations();
+    res.status(200).json({
+      message: "Entire Accommodations",
+      data: data,
+    });
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
+};

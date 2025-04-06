@@ -12,6 +12,9 @@ module.exports = (keycloak) => {
   
     // Route to get all products with optional sorting
     router.get("/get-all-accommodations", accommodationController.getAllAccommodation);
+
+    // Route to get all products without pagination
+    router.get("/get-entire-accommodations", accommodationController.getEntireAccommodation);
   
     // Route to get product details by ID
     router.get("/get-accommodation-details-by-id", accommodationController.deleteAccommodationByID);
