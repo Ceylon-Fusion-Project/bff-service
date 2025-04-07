@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 const authenticateUser = require("../middlewares/authMiddleware");
-const { sendErrorResponse } = require("../utils/sendErrorResponse");
+const sendErrorResponse = require("../utils/sendErrorResponse");
 const jwt = require("jsonwebtoken");
 
 module.exports = (keycloak) => {
@@ -38,7 +38,26 @@ module.exports = (keycloak) => {
   });
 
   // Registration endpoint
+  // router.get("/signup", (req, res) => {
+  //   const registerUrl =
+  //     `${process.env.KEYCLOAK_AUTH_SERVER_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/registrations` +
+  //     `?client_id=${process.env.KEYCLOAK_CLIENT_ID}` +
+  //     `&response_type=code` +
+  //     `&redirect_uri=${encodeURIComponent(
+  //       process.env.BFF_URL + "/api/v1/auth/callback"
+  //     )}`;
+
+  //   // Redirect to Keycloak registration page
+  //   res.redirect(registerUrl);
+  // });
   router.get("/signup", (req, res) => {
+    const frontendRedirect = req.query.redirectTo || "/";
+    const lastPage = `http://localhost:5173${frontendRedirect}`;
+
+    // 1️⃣ Save session flags for registration
+    req.session.isNewUser = true;
+    req.session.afterLogin = lastPage;
+
     const registerUrl =
       `${process.env.KEYCLOAK_AUTH_SERVER_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/registrations` +
       `?client_id=${process.env.KEYCLOAK_CLIENT_ID}` +
@@ -47,14 +66,111 @@ module.exports = (keycloak) => {
         process.env.BFF_URL + "/api/v1/auth/callback"
       )}`;
 
-    // Redirect to Keycloak registration page
-    res.redirect(registerUrl);
+    req.session.save((err) => {
+      if (err) {
+        console.error("Session save error during signup:", err);
+        return res.status(500).json({ error: "Unable to store session state" });
+      }
+      res.redirect(registerUrl);
+    });
   });
 
   // 2) Callback from Keycloak after user logs in
+  // router.get("/callback", async (req, res) => {
+  //   // Get the authorization code from Keycloak
+  //   // (Here 'Code' came as a response of keycloak after login)
+  //   const { code } = req.query;
+
+  //   if (!code) {
+  //     return sendErrorResponse(res, 400, "Authorization code missing");
+  //   }
+
+  //   try {
+  //     // Exchange authorization code for JWT tokens
+  //     const tokenEndpoint = `${process.env.KEYCLOAK_AUTH_SERVER_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/token`;
+
+  //     const response = await axios.post(
+  //       tokenEndpoint,
+  //       new URLSearchParams({
+  //         client_id: process.env.KEYCLOAK_CLIENT_ID,
+  //         client_secret: process.env.KEYCLOAK_CLIENT_SECRET,
+  //         grant_type: "authorization_code",
+  //         code,
+  //         redirect_uri: `${process.env.BFF_URL}/api/v1/auth/callback`,
+  //       }),
+  //       { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+  //     );
+
+  //     //extract response data after axios request
+  //     const { access_token, refresh_token, expires_in } = response.data;
+
+  //     console.log("🔑 Received Access Token:", access_token); // ✅ Log Access Token
+  //     console.log("🔄 Received Refresh Token:", refresh_token);
+
+  //     // Decode token to get role and user ID
+  //     const decoded = jwt.decode(access_token);
+  //     const keycloakId = decoded?.sub;
+  //     const roles = (decoded?.realm_access?.roles || []).map((r) =>
+  //       r.toLowerCase()
+  //     );
+
+  //     // Store tokens in HTTP-only cookies
+  //     res.cookie("jwt", access_token, {
+  //       httpOnly: true,
+  //       // secure: process.env.NODE_ENV === "production",
+  //       // sameSite: "lax",
+  //       //secure: true,
+  //       sameSite: "none",
+  //       secure: true,
+  //       //secure: false,//for development
+  //       maxAge: expires_in * 1000, // Convert expiration to milliseconds
+  //     });
+
+  //     res.cookie("refresh", refresh_token, {
+  //       httpOnly: true,
+  //       // secure: process.env.NODE_ENV === "production",
+  //       // sameSite: "lax",
+  //       //secure: true,
+  //       sameSite: "none",
+  //       secure: true, // Required when sameSite is None
+  //       //secure: false,//for development
+  //       maxAge: 24 * 60 * 60 * 1000, // 24 hours
+  //     });
+
+  //     // set session authenticated as true
+  //     req.session.authenticated = true;
+  //     req.session.keycloakId = keycloakId;
+
+  //     const frontendBase = process.env.FRONTEND_URL || "http://localhost:5173";
+  //     let redirectUrl;
+
+  //     if (roles.includes("owner")) {
+  //       redirectUrl = `${frontendBase}/admin/selection`;
+  //     } else {
+  //       redirectUrl = req.session.afterLogin || frontendBase;
+  //     }
+
+  //     //const redirectUrl = req.session.afterLogin || process.env.FRONTEND_URL;
+
+  //     console.log("🔁 Redirecting user to:", redirectUrl); //log
+
+  //     // Clear the afterLogin session variable after redirecting
+  //     delete req.session.afterLogin;
+
+  //     req.session.save(() => {
+  //       //redirect to the last page user was redirected
+  //       res.redirect(redirectUrl);
+  //     });
+  //   } catch (error) {
+  //     console.error(
+  //       "Error during token exchange:",
+  //       error.response?.data || error.message
+  //     );
+  //     return sendErrorResponse(res, 500, "Token exchange failed");
+  //   }
+  // });
+
   router.get("/callback", async (req, res) => {
-    // Get the authorization code from Keycloak
-    // (Here 'Code' came as a response of keycloak after login)
     const { code } = req.query;
 
     if (!code) {
@@ -62,7 +178,6 @@ module.exports = (keycloak) => {
     }
 
     try {
-      // Exchange authorization code for JWT tokens
       const tokenEndpoint = `${process.env.KEYCLOAK_AUTH_SERVER_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/token`;
 
       const response = await axios.post(
@@ -77,66 +192,61 @@ module.exports = (keycloak) => {
         { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
       );
 
-      //extract response data after axios request
       const { access_token, refresh_token, expires_in } = response.data;
 
-      console.log("🔑 Received Access Token:", access_token); // ✅ Log Access Token
-      console.log("🔄 Received Refresh Token:", refresh_token);
-
-      // Decode token to get role and user ID
       const decoded = jwt.decode(access_token);
       const keycloakId = decoded?.sub;
       const roles = (decoded?.realm_access?.roles || []).map((r) =>
         r.toLowerCase()
       );
 
-      // Store tokens in HTTP-only cookies
+      // Store tokens in secure, HTTP-only cookies
       res.cookie("jwt", access_token, {
         httpOnly: true,
-        // secure: process.env.NODE_ENV === "production",
-        // sameSite: "lax",
-        //secure: true,
         sameSite: "none",
         secure: true,
-        //secure: false,//for development
-        maxAge: expires_in * 1000, // Convert expiration to milliseconds
+        maxAge: expires_in * 1000,
       });
 
       res.cookie("refresh", refresh_token, {
         httpOnly: true,
-        // secure: process.env.NODE_ENV === "production",
-        // sameSite: "lax",
-        //secure: true,
         sameSite: "none",
-        secure: true, // Required when sameSite is None
-        //secure: false,//for development
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        secure: true,
+        maxAge: 24 * 60 * 60 * 1000,
       });
 
-      // set session authenticated as true
+      // Session details
       req.session.authenticated = true;
       req.session.keycloakId = keycloakId;
 
       const frontendBase = process.env.FRONTEND_URL || "http://localhost:5173";
       let redirectUrl;
 
-      if (roles.includes("owner")) {
-        redirectUrl = `${frontendBase}/admin`;
+      // Handle new user signup flow
+      const isNewUser = req.session.isNewUser === true;
+      req.session.isNewUser = false;
+
+      if (isNewUser) {
+        redirectUrl = `${frontendBase}/registration-complete`;
+      } else if (roles.includes("owner")) {
+        redirectUrl = `${frontendBase}/admin/selection`;
       } else {
         redirectUrl = req.session.afterLogin || frontendBase;
       }
 
-      //const redirectUrl = req.session.afterLogin || process.env.FRONTEND_URL;
-
-      console.log("🔁 Redirecting user to:", redirectUrl); //log
-
-      // Clear the afterLogin session variable after redirecting
+      console.log("🔁 Redirecting user to:", redirectUrl);
       delete req.session.afterLogin;
 
+      // req.session.save(() => {
+      //   res.redirect(redirectUrl);
+      // });
       req.session.save(() => {
-        //redirect to the last page user was redirected
-        res.redirect(redirectUrl);
-      });
+        if (!res.headersSent) {
+          res.redirect(redirectUrl);
+        } else {
+          console.warn("⚠️ Response already sent, skipping redirect.");
+        }
+      });      
     } catch (error) {
       console.error(
         "Error during token exchange:",

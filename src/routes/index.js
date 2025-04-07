@@ -30,6 +30,9 @@ module.exports = (keycloak) => {
   const aggregatedCartRoute = require("./aggregated-service/aggregatedCartRoute")(keycloak);
   const aggregatedWishlistRoute = require("./aggregated-service/aggregateWishlistRoute")(keycloak);
 
+  // Import route handlers: USER_SERVICE
+     const userRoutes = require("./user-service/userRoutes")(keycloak);
+
   //____________________________________________________________________________________
   //
   //  --- Route Aggregation ---
@@ -61,6 +64,9 @@ module.exports = (keycloak) => {
 
   // Aggregated Route for Wishlist (requires data from OrderMS + ProductMS)
   router.use("/api/v1/aggregated-wishlist", aggregatedWishlistRoute);
+
+  //Register routes: USER_SERVICES
+  router.use("/api/v1/user", userRoutes);
 
   router.get("/health", async (req, res) => {
     try {
