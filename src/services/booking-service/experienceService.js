@@ -51,14 +51,14 @@ exports.getAllExperience = async (req) => {
 };
 
 exports.getEntireExperience = async () => {
-  const url = `${process.env.API_GATEWAY_URL}/booking-service/api/v1/accommodations/get-all-experience-centers`;
+  const url = `${process.env.API_GATEWAY_URL}/booking-service/api/v1/experience-center/get-all-experience-centers`;
   const response = await axios.get(url);
   return response.data;
 };
 
 exports.getExperienceById = async (req) => {
   const { id } = req.query;
-  const url = `${process.env.API_GATEWAY_URL}/booking-service/api/v1/accommodations/get-experience-center-details-by-id`;
+  const url = `${process.env.API_GATEWAY_URL}/booking-service/api/v1/experience-center/get-experience-center-details-by-id`;
 
   const response = await axios.get(url, {
     params: { id },
@@ -85,7 +85,7 @@ exports.updateExperienceDetails = async (req) => {
     if (!token) throw new Error("Unauthorized");
   
     const { id } = req.query;
-    const url = `${process.env.API_GATEWAY_URL}/booking-service/api/v1/accommodations/update-experience-center-details`;
+    const url = `${process.env.API_GATEWAY_URL}/booking-service/api/v1/experience-center/update-experience-center-details`;
   
     // Build only the required payload
     const payload = {
@@ -99,7 +99,7 @@ exports.updateExperienceDetails = async (req) => {
     };
   
     console.log("Sending update payload:", payload); // Optional logging
-  
+    //console.log("Calling PATCH URL:", `${BOOKING_SERVICE_URL}/booking-service/api/v1/experience-center/update-experience-details?id=${id}`);
     const response = await axios.patch(url, payload, {
       headers: { Authorization: `Bearer ${token}` },
       params: { id },
@@ -114,7 +114,7 @@ exports.deleteExperienceByID = async (req) => {
   const token = req.cookies.jwt;
   if (!token) throw new Error("Unauthorized");
   const { id } = req.query;
-  const url = `${process.env.API_GATEWAY_URL}/booking-service/api/v1/accommodations/delete-experience-center-by-id`;
+  const url = `${process.env.API_GATEWAY_URL}/booking-service/api/v1/experience-center/delete-experience-center-by-id`;
 
   const response = await axios.delete(url, {
     headers: { Authorization: `Bearer ${token}` },
@@ -136,7 +136,7 @@ exports.getExperienceByFiltering = async (req) => {
     size,
   } = req.query;
 
-  const url = `${process.env.API_GATEWAY_URL}/booking-service/api/v1/accommodations/get-experience-center-by-filtering`;
+  const url = `${process.env.API_GATEWAY_URL}/booking-service/api/v1/experience-center/get-experience-center-by-filtering`;
 
   // Remove undefined values from the params object
   const params = Object.fromEntries(
