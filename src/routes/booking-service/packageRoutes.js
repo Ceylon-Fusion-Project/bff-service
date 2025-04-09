@@ -8,22 +8,22 @@ module.exports = (keycloak) => {
     // --- Define Routes ---
   
     // Route to save a product 
-    router.post("/save-accommodation",authenticateUser,idempotencyMiddleware, packageController.savePackage);
+    router.post("/save-package",authenticateUser, packageController.savePackage);
   
     // Route to get all products with optional sorting
-    router.get("/get-all-accommodations", packageController.getAllPackages);
+    router.get("/get-all-package", packageController.getAllPackages);
 
     // Route to get all products without pagination
-    router.get("/get-entire-accommodations", packageController.getEntirePackages);
+    router.get("/get-entire-package", packageController.getEntirePackages);
   
     // Route to get product details by ID
-    router.get("/get-accommodation-details-by-id", packageController.getPackageById);
+    router.get("/get-package-details-by-id", packageController.getPackageById);
   
     // Route to update product details
-    router.patch("/update-accommodation-details",authenticateUser,idempotencyMiddleware, packageController.updatePackageDetails);
+    router.patch("/update-package-details",authenticateUser,idempotencyMiddleware, packageController.updatePackageDetails);
   
     // Route to delete a product by ID
-    router.delete("/delete-accommodation-by-id",authenticateUser,idempotencyMiddleware, packageController.deletePackageByID);
+    router.delete("/delete-package-by-id",authenticateUser, packageController.deletePackageByID);
   
     return router;
   };

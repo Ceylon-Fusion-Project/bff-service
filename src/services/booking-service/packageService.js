@@ -21,8 +21,8 @@ exports.getAllPackages = async (req) => {
   //const url = `http://localhost:8080/api/v1/product/get-all-products`;
   const response = await axios.get(url, {
     params: {
-      page,
-      size
+      page:0,
+      size:10,
     },
   });
 

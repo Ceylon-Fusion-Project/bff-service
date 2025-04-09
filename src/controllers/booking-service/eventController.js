@@ -85,7 +85,7 @@ exports.getAllEventWithSort = async (req, res) => {
   }
 };
 
-exports.getAllEvents = async (res) => {
+exports.getAllEvents = async (req,res) => {
   try {
     const data = await eventService.getAllEvents();
     res.status(200).json({

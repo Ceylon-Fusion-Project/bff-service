@@ -85,7 +85,7 @@ exports.getAllRoomsWithSort = async (req, res) => {
   }
 };
 
-exports.getAllRooms = async (res) => {
+exports.getAllRooms = async (req,res) => {
   try {
     const data = await roomService.getAllRooms();
     res.status(200).json({

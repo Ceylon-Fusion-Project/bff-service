@@ -63,7 +63,7 @@ module.exports = (keycloak) => {
   router.use("/api/v1/rooms", roomRoutes);
   router.use("/api/v1/experience", experienceRoutes);
   router.use("/api/v1/events", eventRoutes);
-  router.use("/api/v1/packages", eventRoutes);
+  router.use("/api/v1/packages", packageRoutes);
 
   // Aggregated Route for Cart (requires data from OrderMS + ProductMS)
   router.use("/api/v1/aggregated-cart", aggregatedCartRoute);
