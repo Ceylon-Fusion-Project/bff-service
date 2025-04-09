@@ -30,3 +30,30 @@ router.post("/upload-certificate", upload.single("file"), async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
+router.post("/upload-booking", upload.single("file"), async (req, res) => {
+  try {
+    const filePath = req.file.path;
+    const form = new FormData();
+
+    form.append("file", fs.createReadStream(filePath));
+    form.append("type", req.body.type || "other"); // 'image' or 'other'
+
+    const response = await axios.post(
+      `${process.env.API_GATEWAY_URL}/booking-service/api/v1/upload-booking/upload-file`,
+      form,
+      {
+        headers: {
+          ...form.getHeaders(),
+          Authorization: `Bearer ${req.cookies.jwt}`,
+        },
+      }
+    );
+
+    fs.unlinkSync(filePath); // clean temp
+    res.status(200).json(response.data);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+

@@ -2,10 +2,18 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 const authenticateUser = require("../middlewares/authMiddleware");
+const sendErrorResponse = require("../utils/sendErrorResponse");
+const jwt = require("jsonwebtoken");
 
 module.exports = (keycloak) => {
   router.get("/login", (req, res) => {
-    const redirectUrl = "http://localhost:5173";  // Frontend URL where users go after login
+    // const redirectUrl = "http://localhost:5173";
+    // Frontend URL where users go after login
+    const frontendRedirect = req.query.redirectTo || "/";
+    const redirectUrl = `http://localhost:5173${frontendRedirect}`;
+
+    console.log("📦 Storing afterLogin in session:", redirectUrl);
+
     const loginUrl =
       process.env.KEYCLOAK_AUTH_SERVER_URL +
       `/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/auth` +
@@ -16,18 +24,40 @@ module.exports = (keycloak) => {
       )}` +
       `&scope=openid`;
 
+    // Store the redirect URL in the session
     req.session.afterLogin = redirectUrl;
     req.session.save((err) => {
       if (err) {
         console.error("Session save error:", err);
         return res.status(500).json({ error: "Session not saved" });
       }
+
+      //redirect to Keycloak login page
       return res.redirect(loginUrl);
     });
   });
 
   // Registration endpoint
+  // router.get("/signup", (req, res) => {
+  //   const registerUrl =
+  //     `${process.env.KEYCLOAK_AUTH_SERVER_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/registrations` +
+  //     `?client_id=${process.env.KEYCLOAK_CLIENT_ID}` +
+  //     `&response_type=code` +
+  //     `&redirect_uri=${encodeURIComponent(
+  //       process.env.BFF_URL + "/api/v1/auth/callback"
+  //     )}`;
+
+  //   // Redirect to Keycloak registration page
+  //   res.redirect(registerUrl);
+  // });
   router.get("/signup", (req, res) => {
+    const frontendRedirect = req.query.redirectTo || "/";
+    const lastPage = `http://localhost:5173${frontendRedirect}`;
+
+    // 1️⃣ Save session flags for registration
+    req.session.isNewUser = true;
+    req.session.afterLogin = lastPage;
+
     const registerUrl =
       `${process.env.KEYCLOAK_AUTH_SERVER_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/registrations` +
       `?client_id=${process.env.KEYCLOAK_CLIENT_ID}` +
@@ -35,25 +65,119 @@ module.exports = (keycloak) => {
       `&redirect_uri=${encodeURIComponent(
         process.env.BFF_URL + "/api/v1/auth/callback"
       )}`;
-    res.redirect(registerUrl);
+
+    req.session.save((err) => {
+      if (err) {
+        console.error("Session save error during signup:", err);
+        return res.status(500).json({ error: "Unable to store session state" });
+      }
+      res.redirect(registerUrl);
+    });
   });
 
   // 2) Callback from Keycloak after user logs in
+  // router.get("/callback", async (req, res) => {
+  //   // Get the authorization code from Keycloak
+  //   // (Here 'Code' came as a response of keycloak after login)
+  //   const { code } = req.query;
+
+  //   if (!code) {
+  //     return sendErrorResponse(res, 400, "Authorization code missing");
+  //   }
+
+  //   try {
+  //     // Exchange authorization code for JWT tokens
+  //     const tokenEndpoint = `${process.env.KEYCLOAK_AUTH_SERVER_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/token`;
+
+  //     const response = await axios.post(
+  //       tokenEndpoint,
+  //       new URLSearchParams({
+  //         client_id: process.env.KEYCLOAK_CLIENT_ID,
+  //         client_secret: process.env.KEYCLOAK_CLIENT_SECRET,
+  //         grant_type: "authorization_code",
+  //         code,
+  //         redirect_uri: `${process.env.BFF_URL}/api/v1/auth/callback`,
+  //       }),
+  //       { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+  //     );
+
+  //     //extract response data after axios request
+  //     const { access_token, refresh_token, expires_in } = response.data;
+
+  //     console.log("🔑 Received Access Token:", access_token); // ✅ Log Access Token
+  //     console.log("🔄 Received Refresh Token:", refresh_token);
+
+  //     // Decode token to get role and user ID
+  //     const decoded = jwt.decode(access_token);
+  //     const keycloakId = decoded?.sub;
+  //     const roles = (decoded?.realm_access?.roles || []).map((r) =>
+  //       r.toLowerCase()
+  //     );
+
+  //     // Store tokens in HTTP-only cookies
+  //     res.cookie("jwt", access_token, {
+  //       httpOnly: true,
+  //       // secure: process.env.NODE_ENV === "production",
+  //       // sameSite: "lax",
+  //       //secure: true,
+  //       sameSite: "none",
+  //       secure: true,
+  //       //secure: false,//for development
+  //       maxAge: expires_in * 1000, // Convert expiration to milliseconds
+  //     });
+
+  //     res.cookie("refresh", refresh_token, {
+  //       httpOnly: true,
+  //       // secure: process.env.NODE_ENV === "production",
+  //       // sameSite: "lax",
+  //       //secure: true,
+  //       sameSite: "none",
+  //       secure: true, // Required when sameSite is None
+  //       //secure: false,//for development
+  //       maxAge: 24 * 60 * 60 * 1000, // 24 hours
+  //     });
+
+  //     // set session authenticated as true
+  //     req.session.authenticated = true;
+  //     req.session.keycloakId = keycloakId;
+
+  //     const frontendBase = process.env.FRONTEND_URL || "http://localhost:5173";
+  //     let redirectUrl;
+
+  //     if (roles.includes("owner")) {
+  //       redirectUrl = `${frontendBase}/admin/selection`;
+  //     } else {
+  //       redirectUrl = req.session.afterLogin || frontendBase;
+  //     }
+
+  //     //const redirectUrl = req.session.afterLogin || process.env.FRONTEND_URL;
+
+  //     console.log("🔁 Redirecting user to:", redirectUrl); //log
+
+  //     // Clear the afterLogin session variable after redirecting
+  //     delete req.session.afterLogin;
+
+  //     req.session.save(() => {
+  //       //redirect to the last page user was redirected
+  //       res.redirect(redirectUrl);
+  //     });
+  //   } catch (error) {
+  //     console.error(
+  //       "Error during token exchange:",
+  //       error.response?.data || error.message
+  //     );
+  //     return sendErrorResponse(res, 500, "Token exchange failed");
+  //   }
+  // });
+
   router.get("/callback", async (req, res) => {
-    // Get the authorization code from Keycloak
-    // (Here 'Code' came as a response of keycloak after login)
     const { code } = req.query;
 
-    // if (!code) {
-    //   return res.status(400).json({ error: "Authorization code missing" });
-    // }
     if (!code) {
       return sendErrorResponse(res, 400, "Authorization code missing");
     }
-    
 
     try {
-      // Exchange authorization code for JWT tokens
       const tokenEndpoint = `${process.env.KEYCLOAK_AUTH_SERVER_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/token`;
 
       const response = await axios.post(
@@ -68,42 +192,61 @@ module.exports = (keycloak) => {
         { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
       );
 
-      //extract response data after axios request
       const { access_token, refresh_token, expires_in } = response.data;
-      console.log("🔑 Received Access Token:", access_token); // ✅ Log Access Token
-      console.log("🔄 Received Refresh Token:", refresh_token);
 
-      // Store tokens in HTTP-only cookies
+      const decoded = jwt.decode(access_token);
+      const keycloakId = decoded?.sub;
+      const roles = (decoded?.realm_access?.roles || []).map((r) =>
+        r.toLowerCase()
+      );
+
+      // Store tokens in secure, HTTP-only cookies
       res.cookie("jwt", access_token, {
         httpOnly: true,
-        // secure: process.env.NODE_ENV === "production",
-        // sameSite: "lax",
-        //secure: true,
-        sameSite: 'none',
+        sameSite: "none",
         secure: true,
-        //secure: false,//for development
-        maxAge: expires_in * 1000, // Convert expiration to milliseconds
+        maxAge: expires_in * 1000,
       });
 
       res.cookie("refresh", refresh_token, {
         httpOnly: true,
-       // secure: process.env.NODE_ENV === "production",
-        // sameSite: "lax",
-        //secure: true,
-        sameSite: 'none',
-        secure: true, // Required when sameSite is None
-        //secure: false,//for development
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        sameSite: "none",
+        secure: true,
+        maxAge: 24 * 60 * 60 * 1000,
       });
 
+      // Session details
       req.session.authenticated = true;
+      req.session.keycloakId = keycloakId;
 
-    const redirectUrl = req.session.afterLogin || process.env.FRONTEND_URL;
-    delete req.session.afterLogin;
+      const frontendBase = process.env.FRONTEND_URL || "http://localhost:5173";
+      let redirectUrl;
 
-    req.session.save(() => {
-      res.redirect(redirectUrl);
-    });
+      // Handle new user signup flow
+      const isNewUser = req.session.isNewUser === true;
+      req.session.isNewUser = false;
+
+      if (isNewUser) {
+        redirectUrl = `${frontendBase}/registration-complete`;
+      } else if (roles.includes("owner")) {
+        redirectUrl = `${frontendBase}/admin/selection`;
+      } else {
+        redirectUrl = req.session.afterLogin || frontendBase;
+      }
+
+      console.log("🔁 Redirecting user to:", redirectUrl);
+      delete req.session.afterLogin;
+
+      // req.session.save(() => {
+      //   res.redirect(redirectUrl);
+      // });
+      req.session.save(() => {
+        if (!res.headersSent) {
+          res.redirect(redirectUrl);
+        } else {
+          console.warn("⚠️ Response already sent, skipping redirect.");
+        }
+      });      
     } catch (error) {
       console.error(
         "Error during token exchange:",
@@ -113,9 +256,8 @@ module.exports = (keycloak) => {
     }
   });
 
-  // Logout endpoint 
+  // Logout endpoint
   router.get("/logout", async (req, res) => {
-
     try {
       const refreshToken = req.cookies.refresh;
 
@@ -128,18 +270,25 @@ module.exports = (keycloak) => {
             client_secret: process.env.KEYCLOAK_CLIENT_SECRET,
             refresh_token: refreshToken,
           }),
-          {headers: {"content-Type": "application/x-www-form-urlencoded"}}
+          { headers: { "content-Type": "application/x-www-form-urlencoded" } }
         );
       }
 
-      res.clearCookie("jwt", { httpOnly: true, sameSite: "None", secure: true });
-      res.clearCookie("refresh", { httpOnly: true, sameSite: "None", secure: true });
+      res.clearCookie("jwt", {
+        httpOnly: true,
+        sameSite: "None",
+        secure: true,
+      });
+      res.clearCookie("refresh", {
+        httpOnly: true,
+        sameSite: "None",
+        secure: true,
+      });
 
-      const logoutUrl =
-      `${process.env.KEYCLOAK_AUTH_SERVER_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/logout?redirect_uri=${process.env.FRONTEND_URL}`;
+      const logoutUrl = `${process.env.KEYCLOAK_AUTH_SERVER_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/logout?redirect_uri=${process.env.FRONTEND_URL}`;
 
       req.session.destroy((err) => {
-        if (err) console.error("Error destroying session",err);
+        if (err) console.error("Error destroying session", err);
         res.redirect(logoutUrl);
       });
     } catch (err) {
@@ -149,7 +298,7 @@ module.exports = (keycloak) => {
   });
 
   //Check authenticated status from frontend
-  router.get("/check",authenticateUser, (req, res) => {
+  router.get("/check", authenticateUser, (req, res) => {
     console.log("🔍 Checking Auth. Cookies:", req.cookies); // ✅ Log received cookies
     if (req.cookies.jwt) {
       return res.status(200).json({ authenticated: true });
@@ -160,14 +309,14 @@ module.exports = (keycloak) => {
   //refresh token endpoint that call from frontend
   router.get("/refresh", async (req, res) => {
     const refreshToken = req.cookies.refresh;
-  
+
     if (!refreshToken) {
       return sendErrorResponse(res, 401, "Refresh token missing");
     }
-  
+
     try {
       const tokenEndpoint = `${process.env.KEYCLOAK_AUTH_SERVER_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/token`;
-      
+
       //sends a request to Keycloak to exchange the refresh token for a new access token
       const response = await axios.post(
         tokenEndpoint,
@@ -179,9 +328,9 @@ module.exports = (keycloak) => {
         }),
         { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
       );
-  
+
       const { access_token, refresh_token, expires_in } = response.data;
-  
+
       // Update cookies with the new tokens
       res.cookie("jwt", access_token, {
         httpOnly: true,
@@ -192,24 +341,27 @@ module.exports = (keycloak) => {
         //secure: false,//for development
         maxAge: expires_in * 1000,
       });
-  
+
       res.cookie("refresh", refresh_token, {
         httpOnly: true,
         // secure: process.env.NODE_ENV === "production",
         // sameSite: "lax",
         //secure: true,
-        sameSite:'none',
+        sameSite: "none",
         secure: true, // Required when sameSite is None
         //secure: false,//for development
         maxAge: 24 * 60 * 60 * 1000,
       });
-  
+
       res.status(200).json({ message: "Token refreshed" });
     } catch (error) {
-      console.error("Token refresh failed:", error.response?.data || error.message);
+      console.error(
+        "Token refresh failed:",
+        error.response?.data || error.message
+      );
       res.status(403).json({ error: "Refresh failed" });
     }
-  });  
+  });
 
   return router;
 };

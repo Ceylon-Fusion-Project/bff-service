@@ -16,35 +16,10 @@ const { initKeycloak } = require('./config/keycloak');
 const { globalLimiter } = require('./middlewares/rateLimiter');
 
 //Import saveOriginal Url
-const saveOriginalUrl = require('./middlewares/saveOriginalUrl');
+//const saveOriginalUrl = require('./middlewares/saveOriginalUrl');
 
 // Initialize Express application
 const app = express();
-
-// app.use((req, res, next) => {
-//   res.header("Access-Control-Allow-Origin", process.env.FRONTEND_URL);
-//   res.header("Access-Control-Allow-Credentials", "true");
-//   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-//   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-//   // If this is an OPTIONS request, respond immediately.
-//   if (req.method === "OPTIONS") {
-//     return res.sendStatus(200);
-//   }
-//   next();
-// });
-
-// Security middleware
-// app.use(cors({
-//   origin: process.env.FRONTEND_URL,
-//   credentials: true
-// }));
-
-// app.use(cors({
-//   origin: ["http://localhost:5173", "http://localhost:3001"], // Allow Frontend & BFF
-//   credentials: true,
-//   methods: "GET, POST, PUT, DELETE, OPTIONS",
-//   allowedHeaders: "Origin, X-Requested-With, Content-Type, Accept, Authorization,X-Idempotency-Key"
-// }));
 
 // ✅ Remove manual CORS headers and use only cors package
 app.use(cors({
@@ -67,16 +42,6 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// // Redis client setup
-// const redisClient = redis.createClient({
-//   host: process.env.REDIS_HOST,
-//   port: process.env.REDIS_PORT,
-//   password: process.env.REDIS_PASSWORD
-// });
-
-//redisClient.on('error', (err) => console.log('Redis Client Error', err));
-
-// Session configuration with Redis
 app.use(
   session({
     store: sessionStore,
@@ -94,7 +59,7 @@ app.use(
 );
 
 // Save original URL middleware
- app.use(saveOriginalUrl);
+//app.use(saveOriginalUrl);
 
 // Keycloak configuration
 const keycloakConfig = {

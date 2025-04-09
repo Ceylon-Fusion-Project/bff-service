@@ -1,15 +1,27 @@
-const productService = require("../../services/product-service/productService");
+const userService = require("../../services/user-service/userService");
 
-exports.saveProduct = async (req, res) => {
+exports.completeRegistration = async (req, res) => {
   try {
-    const data = await productService.saveProduct(req); // Calls the service
+    const data = await userService.completeRegistration(req,res); // Calls the service
     // Responds with HTTP 201 (Created) if successful
     res.status(201).json({
-      message: "Product saved successfully",
+      message: "Registration Completed successfully",
       data: data, // received data from the service
     });
   } catch (error) {
     res.status(409).json({ message: error.message });
+  }
+};
+
+exports.getUserByCFId = async (req, res) => {
+  try {
+    const data = await userService.getUserByCFId(req);
+    res.status(200).json({
+      message: "User Fetched Successfully",
+      data: data,
+    });
+  } catch (error) {
+    res.status(404).json({ message: error.message });
   }
 };
 
@@ -37,17 +49,7 @@ exports.deleteProductByID = async (req, res) => {
   }
 };
 
-exports.getProductById = async (req, res) => {
-  try {
-    const data = await productService.getProductById(req);
-    res.status(200).json({
-      message: "Product Fetched Successfully",
-      data: data,
-    });
-  } catch (error) {
-    res.status(404).json({ message: error.message });
-  }
-};
+
 
 exports.getProductByFiltering = async (req, res) => {
   try {
